@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const classes = [
   {
@@ -78,6 +78,7 @@ const sidebarStyle = {
   padding: "20px",
   display: "flex",
   flexDirection: "column",
+  alignItems: "center",
 };
 
 const chatContainerStyle = {
@@ -113,7 +114,7 @@ const inputStyle = {
 const messageStyle = {
   display: "flex",
   marginBottom: "16px",
-  flexGrow: 1
+  flexGrow: 1,
 };
 
 const avatarStyle = {
@@ -143,13 +144,31 @@ const rightBubbleStyle = {
   color: "white",
 };
 
+const profileButtonStyle = {
+  marginTop: "auto",
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  border: "none",
+  backgroundColor: "transparent",
+  cursor: "pointer",
+  fontSize: "16px",
+};
+
 export default function ChatPage() {
   const [newMessage, setNewMessage] = useState("");
   const [selectedChat, setSelectedChat] = useState(classes[0]);
+  const router = useRouter();
 
-  const handleClassSelect = (cls) => {
+  function handleClassSelect(cls) {
     setSelectedChat(cls);
-  };
+  }
+
+  function handleLogout() {
+    // Logout logic here
+
+    router.push("/login");
+  }
 
   return (
     <div style={containerStyle}>
@@ -176,14 +195,7 @@ export default function ChatPage() {
             {cls.code}
           </button>
         ))}
-        <div
-          style={{
-            marginTop: "auto",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
+        <button style={profileButtonStyle}>
           <div
             style={{
               width: "30px",
@@ -192,8 +204,20 @@ export default function ChatPage() {
               backgroundColor: "#007AFF",
             }}
           ></div>
-          <span>wesley123</span>
-        </div>
+          <div>wesley123</div>
+        </button>
+        <button
+          style={{
+            marginTop: "10px",
+            border: "none",
+            backgroundColor: "transparent",
+            cursor: "pointer",
+            color: "#007AFF",
+          }}
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
       </div>
       <div style={chatContainerStyle}>
         <div style={headerStyle}>
@@ -214,7 +238,7 @@ export default function ChatPage() {
               {!msg.isRight && (
                 <>
                   <div style={avatarStyle}>{msg.avatar}</div>
-                  <div style={{maxWidth: "60%"}}>
+                  <div style={{ maxWidth: "60%" }}>
                     <div style={{ fontSize: "12px", marginBottom: "4px" }}>
                       {msg.user}
                     </div>
@@ -223,7 +247,13 @@ export default function ChatPage() {
                 </>
               )}
               {msg.isRight && (
-                <div style={{ maxWidth: "60%", ...bubbleStyle, ...rightBubbleStyle }}>
+                <div
+                  style={{
+                    maxWidth: "60%",
+                    ...bubbleStyle,
+                    ...rightBubbleStyle,
+                  }}
+                >
                   {msg.message}
                 </div>
               )}
