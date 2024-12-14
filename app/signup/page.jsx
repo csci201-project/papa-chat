@@ -74,6 +74,8 @@ export default function SignupPage() {
     }
     // TODO: Implement signup logic
     console.log('Signup attempt:', { username, password });
+    alert('Registration successful! Redirecting to chat...');
+    window.location.href = "/chat";
   };
 
   return (
