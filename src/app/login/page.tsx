@@ -13,7 +13,25 @@ export default function LoginPage() {
     console.log('Login attempt:', { username, password });
 
     localStorage.setItem('username', username);
+    login();
   };
+
+  async function login() {
+    try {
+      var response = await fetch("http://localhost:8000/login", {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ username, password })
+      });
+      var values = await response.json();
+      console.log(values.verified);
+
+    } catch (error) {
+      console.log(error)
+    }	
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">

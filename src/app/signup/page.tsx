@@ -16,9 +16,25 @@ export default function SignupPage() {
     }
     // TODO: Implement signup logic
     console.log('Signup attempt:', { username, password });
-    alert('Registration successful! Redirecting to chat...');
-    window.location.href = "/chat";
+    //alert('Registration successful! Redirecting to chat...');
+    // window.location.href = "/chat";
+    register();
   };
+
+  async function register() {
+    try {
+    const response = await fetch("http://localhost:8000/registerVerification", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username, password })
+    });
+    console.log(response);
+  } catch (error) {
+    console.log(error)
+  }	
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
