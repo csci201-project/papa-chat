@@ -11,8 +11,6 @@ export default function LoginPage() {
     e.preventDefault();
     // TODO: Implement login logic
     console.log('Login attempt:', { username, password });
-
-    localStorage.setItem('username', username);
     login();
   };
 
@@ -26,8 +24,17 @@ export default function LoginPage() {
           body: JSON.stringify({ username, password })
       });
       var values = await response.json();
-      console.log(values.verified);
-
+      if (values.verified)
+      {
+        console.log("login succeeded");
+        localStorage.setItem('username', username);
+        window.location.href = "/chat";
+      }
+      else
+      {
+        console.log("login failed");
+        alert(values.message);
+      }
     } catch (error) {
       console.log(error)
     }	
