@@ -11,6 +11,8 @@ export default function LoginPage() {
     e.preventDefault();
     // TODO: Implement login logic
     console.log('Login attempt:', { username, password });
+
+    localStorage.setItem('username', username);
   };
 
   return (

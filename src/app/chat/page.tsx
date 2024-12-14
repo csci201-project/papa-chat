@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import Image from 'next/image';
 
 interface Class {
   id: string;
@@ -9,12 +10,24 @@ interface Class {
   instructor: string;
 }
 
+interface Emote {
+  name: string;
+  url: string;
+}
+
 interface Message {
   id: string;
   user: string;
   message: string;
   avatar?: string;
   isRight?: boolean;
+  parsedContent?: (string | Emote)[];
+}
+
+interface TopicState {
+  messages: Message[];
+  connection: WebSocket | null;
+  isConnected: boolean;
 }
 
 export default function ChatPage() {
@@ -24,69 +37,104 @@ export default function ChatPage() {
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [newTopic, setNewTopic] = useState("");
   const [isAddingTopic, setIsAddingTopic] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
+  
+  const [topicStates, setTopicStates] = useState<Map<string, TopicState>>(new Map());
+  const [emoteCache, setEmoteCache] = useState<Map<string, Emote>>(new Map());
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
 
-  const wsRef = useRef<WebSocket | null>(null);
-
-  // Fetch topics on component mount
   useEffect(() => {
-    fetchTopics();
+    setCurrentUser(localStorage.getItem('username'));
   }, []);
 
-  // WebSocket connection management
+  useEffect(() => {
+    fetchTopics().then((topicList: string[]) => {
+      topicList.forEach((topic: string) => {
+        connectWebSocket(topic);
+      });
+    });
+  }, []);
+
   useEffect(() => {
     if (selectedTopic) {
-      // Clear messages when switching topics
-      setMessages([]);
-      connectWebSocket(selectedTopic);
-    }
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
+      const topicState = topicStates.get(selectedTopic);
+      if (topicState) {
+        setMessages(topicState.messages);
       }
+    }
+  }, [selectedTopic, topicStates]);
+
+  useEffect(() => {
+    return () => {
+      // Close all connections when component unmounts
+      topicStates.forEach((state) => {
+        state.connection?.close();
+      });
     };
-  }, [selectedTopic]);
+  }, []);
 
   const fetchTopics = async () => {
     try {
       const response = await fetch('/api/topics');
       const topicList = await response.json();
       setTopics(topicList);
+      return topicList;
     } catch (error) {
       console.error('Failed to fetch topics:', error);
+      return [];
     }
   };
 
   const connectWebSocket = (topic: string) => {
-    if (wsRef.current) {
-      wsRef.current.close();
+    if (topicStates.get(topic)?.connection) {
+      return;
     }
 
-    console.log('Connecting to WebSocket:', `ws://localhost:8000/ws/chat/${topic}?token=token`);
     const ws = new WebSocket(`ws://localhost:8000/ws/chat/${topic}?token=token`);
 
     ws.onopen = () => {
-      console.log('WebSocket Connected');
-      setIsConnected(true);
+      setTopicStates(prev => {
+        const newMap = new Map(prev);
+        const currentState = newMap.get(topic) || { messages: [], connection: ws, isConnected: true };
+        newMap.set(topic, { ...currentState, isConnected: true });
+        return newMap;
+      });
     };
 
     ws.onclose = (event) => {
       console.log('WebSocket Closed:', event);
-      setIsConnected(false);
+      setTopicStates(prev => {
+        const newMap = new Map(prev);
+        const currentState = newMap.get(topic) || { messages: [], connection: null, isConnected: false };
+        newMap.set(topic, { ...currentState, isConnected: false });
+        return newMap;
+      });
     };
 
-    ws.onmessage = (event) => {
-      console.log('Received raw message:', event.data);
+    ws.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('Parsed message data:', data);
-        
-        setMessages(prev => [...prev, {
+        const parsedContent = await parseMessage(data.message);
+        const newMessage = {
           id: Date.now().toString(),
           user: data.user || 'anonymous',
           message: data.message,
-          isRight: data.user === 'me'  // Only right-align if it's our message
-        }]);
+          isRight: data.user === currentUser,
+          parsedContent
+        };
+
+        setTopicStates(prev => {
+          const newMap = new Map(prev);
+          const currentState = newMap.get(topic) || { messages: [], connection: ws, isConnected: true };
+          newMap.set(topic, {
+            ...currentState,
+            messages: [...currentState.messages, newMessage]
+          });
+          return newMap;
+        });
+
+        if (topic === selectedTopic) {
+          setMessages(prev => [...prev, newMessage]);
+        }
       } catch (error) {
         console.error('Error parsing message:', error);
       }
@@ -96,35 +144,28 @@ export default function ChatPage() {
       console.error('WebSocket error:', error);
     };
 
-    wsRef.current = ws;
+    setTopicStates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(topic, { messages: [], connection: ws, isConnected: false });
+      return newMap;
+    });
   };
 
-  const sendMessage = () => {
-    if (!newMessage.trim() || !wsRef.current || !isConnected) {
-      console.log('Cannot send message: ', {
-        hasMessage: !!newMessage.trim(),
-        hasWebSocket: !!wsRef.current,
-        isConnected,
-        readyState: wsRef.current?.readyState
-      });
+  const sendMessage = async () => {
+    const topicState = topicStates.get(selectedTopic);
+    if (!newMessage.trim() || !topicState?.connection || !topicState.isConnected || !currentUser) {
       return;
     }
-
+  
     const messageData = {
       type: 'chat',
-      message: newMessage
+      message: newMessage,
+      user: currentUser
     };
-
+  
     try {
       console.log('Sending message:', messageData);
-      wsRef.current.send(JSON.stringify(messageData));
-      
-      setMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        user: 'me',
-        message: newMessage,
-        isRight: true
-      }]);
+      topicState.connection.send(JSON.stringify(messageData));
 
       setNewMessage('');
     } catch (error) {
@@ -147,29 +188,64 @@ export default function ChatPage() {
       });
       
       if (response.ok) {
-        fetchTopics(); // Refresh the topics list
-        setNewTopic(""); // Clear the input
-        setIsAddingTopic(false); // Hide the input
+        fetchTopics();
+        setNewTopic("");
+        setIsAddingTopic(false);
       }
     } catch (error) {
       console.error('Failed to create topic:', error);
     }
   };
 
-  const fetchMessageHistory = async (topic: string) => {
-    try {
-      const response = await fetch(`/api/messages/${topic}`);
-      const history = await response.json();
-      setMessages(history.map((msg: any) => ({
-        id: msg.id,
-        user: msg.user,
-        message: msg.message,
-        isRight: msg.user === 'me', // or however you want to determine message alignment
-      })));
-    } catch (error) {
-      console.error('Failed to fetch message history:', error);
-      setMessages([]);
+  const fetchEmote = async (emoteName: string): Promise<Emote | null> => {
+    if (emoteCache.has(emoteName)) {
+      return emoteCache.get(emoteName)!;
     }
+
+    try {
+      const response = await fetch(`/api/emotes/${emoteName}`);
+      if (response.ok) {
+        const emote: Emote = {
+          name: emoteName,
+          url: `/api/emotes/${emoteName}`
+        };
+        setEmoteCache(prev => new Map(prev).set(emoteName, emote));
+        return emote;
+      }
+    } catch (error) {
+      console.error('Failed to fetch emote:', emoteName, error);
+    }
+    return null;
+  };
+
+  const parseMessage = async (message: string): Promise<(string | Emote)[]> => {
+    const parts: (string | Emote)[] = [];
+    const emoteRegex = /:([a-zA-Z0-9_]+):/g;
+    let lastIndex = 0;
+    
+    for (const match of message.matchAll(emoteRegex)) {
+      const [fullMatch, emoteName] = match;
+      const matchIndex = match.index!;
+      
+      if (matchIndex > lastIndex) {
+        parts.push(message.slice(lastIndex, matchIndex));
+      }
+      
+      const emote = await fetchEmote(emoteName);
+      if (emote) {
+        parts.push(emote);
+      } else {
+        parts.push(fullMatch);
+      }
+      
+      lastIndex = matchIndex + fullMatch.length;
+    }
+    
+    if (lastIndex < message.length) {
+      parts.push(message.slice(lastIndex));
+    }
+    
+    return parts;
   };
 
   return (
@@ -230,8 +306,8 @@ export default function ChatPage() {
         <div className="border-b border-gray-200 p-5 flex flex-col gap-2.5">
           <h2>{selectedTopic || "Select a topic"}</h2>
           {selectedTopic && (
-            <div className={`text-xs ${isConnected ? 'text-green-500' : 'text-red-500'}`}>
-              {isConnected ? 'Connected' : 'Connecting...'}
+            <div className={`text-xs ${topicStates.get(selectedTopic)?.isConnected ? 'text-green-500' : 'text-red-500'}`}>
+              {topicStates.get(selectedTopic)?.isConnected ? 'Connected' : 'Connecting...'}
             </div>
           )}
         </div>
@@ -249,15 +325,41 @@ export default function ChatPage() {
                   </div>
                   <div className="max-w-[60%] flex flex-col">
                     <div className="text-xs mb-1">{msg.user}</div>
-                    <div className="bg-gray-100 p-2 px-3 rounded-xl">
-                      {msg.message}
+                    <div className="bg-gray-100 p-2 px-3 rounded-xl flex flex-wrap items-center gap-1">
+                      {msg.parsedContent?.map((content, i) => 
+                        typeof content === 'string' ? (
+                          <span key={i}>{content}</span>
+                        ) : (
+                          <Image
+                            key={i}
+                            src={content.url}
+                            alt={content.name}
+                            width={24}
+                            height={24}
+                            className="inline-block align-middle"
+                          />
+                        )
+                      )}
                     </div>
                   </div>
                 </>
               )}
               {msg.isRight && (
-                <div className="max-w-[60%] bg-blue-500 text-white p-2 px-3 rounded-xl">
-                  {msg.message}
+                <div className="max-w-[60%] bg-blue-500 text-white p-2 px-3 rounded-xl flex flex-wrap items-center gap-1">
+                  {msg.parsedContent?.map((content, i) => 
+                    typeof content === 'string' ? (
+                      <span key={i}>{content}</span>
+                    ) : (
+                      <Image
+                        key={i}
+                        src={content.url}
+                        alt={content.name}
+                        width={24}
+                        height={24}
+                        className="inline-block align-middle"
+                      />
+                    )
+                  )}
                 </div>
               )}
             </div>
