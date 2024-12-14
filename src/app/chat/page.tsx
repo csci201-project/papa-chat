@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import type { CSSProperties } from 'react';
 
 interface Class {
   id: string;
@@ -24,11 +22,11 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [selectedTopic, setSelectedTopic] = useState<string>("");
-  const wsRef = useRef<WebSocket | null>(null);
-  const router = useRouter();
   const [newTopic, setNewTopic] = useState("");
   const [isAddingTopic, setIsAddingTopic] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+
+  const wsRef = useRef<WebSocket | null>(null);
 
   // Fetch topics on component mount
   useEffect(() => {
@@ -174,128 +172,25 @@ export default function ChatPage() {
     }
   };
 
-  const containerStyle: CSSProperties = {
-    minHeight: "100vh",
-    display: "flex",
-    backgroundColor: "white",
-  };
-
-  const sidebarStyle: CSSProperties = {
-    width: "250px",
-    borderRight: "1px solid #e5e5e5",
-    padding: "20px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-  };
-
-  const chatContainerStyle: CSSProperties = {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    height: "100vh",
-  };
-
-  const headerStyle: CSSProperties = {
-    borderBottom: "1px solid #e5e5e5",
-    padding: "20px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-  };
-
-  const messageContainerStyle: CSSProperties = {
-    flex: 1,
-    overflowY: "auto",
-    padding: "30px",
-  };
-
-  const inputStyle: CSSProperties = {
-    fontSize: "16px",
-    padding: "12px",
-    border: "1px solid #e5e5e5",
-    borderRadius: "8px",
-    margin: "10px 27px 27px 27px",
-    outline: "none",
-  };
-
-  const messageStyle: CSSProperties = {
-    display: "flex",
-    marginBottom: "16px",
-    flexGrow: 1,
-  };
-
-  const avatarStyle: CSSProperties = {
-    width: "33px",
-    height: "33px",
-    borderRadius: "50%",
-    backgroundColor: "#f0f0f0",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: "10px",
-    flexShrink: 0,
-  };
-
-  const bubbleStyle = {
-    backgroundColor: "#f0f0f0",
-    padding: "8px 12px",
-    borderRadius: "12px",
-  };
-
-  const rightMessageStyle = {
-    justifyContent: "flex-end",
-  };
-
-  const rightBubbleStyle = {
-    backgroundColor: "#007AFF",
-    color: "white",
-  };
-
-  const profileButtonStyle = {
-    marginTop: "auto",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    border: "none",
-    backgroundColor: "transparent",
-    cursor: "pointer",
-    fontSize: "16px",
-  };
-
   return (
-    <div style={containerStyle}>
-      <div style={sidebarStyle}>
-        <h2 style={{ marginBottom: "20px" }}>Active Topics</h2>
+    <div className="min-h-screen flex bg-white">
+      <div className="w-[250px] border-r border-gray-200 p-5 flex flex-col items-center">
+        <h2 className="mb-5">Active Topics</h2>
         
         {isAddingTopic ? (
-          <div style={{ width: "100%", marginBottom: "16px" }}>
+          <div className="w-full mb-4">
             <input
               type="text"
               value={newTopic}
               onChange={(e) => setNewTopic(e.target.value)}
               placeholder="Enter topic name"
-              style={{
-                width: "100%",
-                padding: "8px",
-                marginBottom: "8px",
-                border: "1px solid #e5e5e5",
-                borderRadius: "4px",
-              }}
+              className="w-full p-2 mb-2 border border-gray-200 rounded"
               onKeyPress={(e) => e.key === 'Enter' && createTopic()}
             />
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div className="flex gap-2">
               <button
                 onClick={createTopic}
-                style={{
-                  padding: "8px",
-                  backgroundColor: "#007AFF",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  flex: 1,
-                }}
+                className="flex-1 p-2 bg-blue-500 text-white rounded cursor-pointer"
               >
                 Create
               </button>
@@ -304,14 +199,7 @@ export default function ChatPage() {
                   setIsAddingTopic(false);
                   setNewTopic("");
                 }}
-                style={{
-                  padding: "8px",
-                  backgroundColor: "#e5e5e5",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  flex: 1,
-                }}
+                className="flex-1 p-2 bg-gray-200 rounded cursor-pointer"
               >
                 Cancel
               </button>
@@ -320,16 +208,7 @@ export default function ChatPage() {
         ) : (
           <button
             onClick={() => setIsAddingTopic(true)}
-            style={{
-              width: "100%",
-              padding: "12px",
-              marginBottom: "16px",
-              backgroundColor: "#007AFF",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
+            className="w-full p-3 mb-4 bg-blue-500 text-white rounded-lg cursor-pointer"
           >
             Add Topic
           </button>
@@ -339,80 +218,61 @@ export default function ChatPage() {
           <button
             key={topic}
             onClick={() => setSelectedTopic(topic)}
-            style={{
-              width: "100%",
-              padding: "12px",
-              border: "1px solid #e5e5e5",
-              fontWeight: "bold",
-              borderRadius: "8px",
-              marginBottom: "8px",
-              backgroundColor: selectedTopic === topic ? "#007AFF" : "white",
-              color: selectedTopic === topic ? "white" : "black",
-              cursor: "pointer",
-            }}
+            className={`w-full p-3 border border-gray-200 font-bold rounded-lg mb-2 cursor-pointer
+              ${selectedTopic === topic ? 'bg-blue-500 text-white' : 'bg-white text-black'}`}
           >
             {topic}
           </button>
         ))}
-        {/* Rest of your sidebar content... */}
       </div>
-      <div style={chatContainerStyle}>
-        <div style={headerStyle}>
+
+      <div className="flex-1 flex flex-col h-screen">
+        <div className="border-b border-gray-200 p-5 flex flex-col gap-2.5">
           <h2>{selectedTopic || "Select a topic"}</h2>
           {selectedTopic && (
-            <div style={{ 
-              fontSize: '12px', 
-              color: isConnected ? '#4CAF50' : '#f44336' 
-            }}>
+            <div className={`text-xs ${isConnected ? 'text-green-500' : 'text-red-500'}`}>
               {isConnected ? 'Connected' : 'Connecting...'}
             </div>
           )}
         </div>
-        <div style={messageContainerStyle}>
-          {messages.map((msg) => (
+
+        <div className="flex-1 overflow-y-auto p-7">
+          {messages.map((msg, index) => (
             <div
-              key={msg.id}
-              style={{
-                ...messageStyle,
-                ...(msg.isRight ? rightMessageStyle : {}),
-              }}
+              key={index}
+              className={`flex mb-4 flex-grow ${msg.isRight ? 'justify-end' : ''}`}
             >
               {!msg.isRight && (
                 <>
-                  <div style={avatarStyle}>{msg.avatar}</div>
-                  <div style={{ maxWidth: "60%" }}>
-                    <div style={{ fontSize: "12px", marginBottom: "4px" }}>
-                      {msg.user}
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-2.5 flex-shrink-0 self-start mt-4">
+                    {msg.avatar}
+                  </div>
+                  <div className="max-w-[60%] flex flex-col">
+                    <div className="text-xs mb-1">{msg.user}</div>
+                    <div className="bg-gray-100 p-2 px-3 rounded-xl">
+                      {msg.message}
                     </div>
-                    <div style={bubbleStyle}>{msg.message}</div>
                   </div>
                 </>
               )}
               {msg.isRight && (
-                <div
-                  style={{
-                    maxWidth: "60%",
-                    ...bubbleStyle,
-                    ...rightBubbleStyle,
-                  }}
-                >
+                <div className="max-w-[60%] bg-blue-500 text-white p-2 px-3 rounded-xl">
                   {msg.message}
                 </div>
               )}
             </div>
           ))}
         </div>
+
         <input
           type="text"
           placeholder="Send a message..."
-          style={inputStyle}
+          className="text-base p-3 border border-gray-200 rounded-lg mx-7 mb-7 outline-none"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyPress}
         />
       </div>
     </div>
   );
 }
-
-// Your existing styles remain the same...
