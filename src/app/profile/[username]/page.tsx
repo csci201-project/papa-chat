@@ -10,9 +10,16 @@ interface UserProfile {
     // Add more profile fields as needed
 }
 
+interface ChatMessage {
+    classCode: string;
+    timestamp: string;
+    message: string;
+}
+
 export default function ProfilePage({ params }: { params: { username: string } }) {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const router = useRouter();
     const currentUser = typeof window !== 'undefined' ? localStorage.getItem('username') : null;
 
@@ -41,6 +48,33 @@ export default function ProfilePage({ params }: { params: { username: string } }
         }
     };
 
+    const fetchChatHistory = async () => {
+        try {
+            const response = await fetch(`/api/profile/${params.username}/history`);
+            if (response.ok) {
+                const history = await response.json();
+                // Parse the combined strings into structured data
+                const parsedHistory = history.map((item: string) => {
+                    const [classCode, date, time, ...messageParts] = item.split(' ');
+                    return {
+                        classCode,
+                        timestamp: `${date} ${time}`,
+                        message: messageParts.join(' ')
+                    };
+                });
+                setChatHistory(parsedHistory);
+            }
+        } catch (error) {
+            console.error('Failed to fetch chat history:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (currentUser) {
+            fetchChatHistory();
+        }
+    }, [params.username]);
+
     if (isLoading) {
         return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
     }
@@ -53,7 +87,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
                         onClick={() => router.push('/chat')}
                         className="text-blue-500 hover:text-blue-600"
                     >
-                        ← Back to Chat
+                        👈 Back to Chat
                     </button>
                 </div>
 
@@ -77,6 +111,37 @@ export default function ProfilePage({ params }: { params: { username: string } }
                             Member since: {profile?.joinDate || 'Unknown'}
                         </p>
                     </div>
+                </div>
+            </div>
+
+            <div className="border-t pt-4 mt-4">
+                <h2 className="text-lg font-semibold mb-4">Chat History</h2>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white border border-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                                <th className="px-6 py-3 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                <th className="px-6 py-3 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                            {chatHistory.map((chat, index) => (
+                                <tr key={index} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{chat.classCode}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{chat.timestamp}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-900">{chat.message}</td>
+                                </tr>
+                            ))}
+                            {chatHistory.length === 0 && (
+                                <tr>
+                                    <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                                        No chat history available
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
