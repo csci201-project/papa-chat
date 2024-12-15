@@ -375,7 +375,7 @@ export default function ChatPage() {
               localStorage.removeItem('username');
               window.location.href = '/login';
             }}
-            className="w-full py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            className="w-full py-2 px-4 bg-white text-slate-500 text-sm border rounded-lg hover:bg-slate-100 transition-colors"
           >
             Logout
           </button>
