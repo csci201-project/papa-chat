@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { FaArrowUp } from "react-icons/fa";
+import { MdEmojiEmotions } from "react-icons/md";
+import EmojiPicker from "emoji-picker-react";
 
 interface Class {
   id: string;
@@ -38,6 +41,7 @@ export default function ChatPage() {
   const [newTopic, setNewTopic] = useState("");
   const [isAddingTopic, setIsAddingTopic] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const [topicStates, setTopicStates] = useState<Map<string, TopicState>>(
     new Map()
@@ -334,6 +338,11 @@ export default function ChatPage() {
     return parts;
   };
 
+  function handleEmojiSelect(emojiObject: any) {
+    setNewMessage((prev) => prev + emojiObject.emoji);
+    setShowEmojiPicker(false);
+  }
+
   return (
     <div className="min-h-screen flex bg-white">
       <div className="w-[250px] border-r border-gray-200 p-5 flex flex-col">
@@ -410,7 +419,7 @@ export default function ChatPage() {
               localStorage.removeItem("username");
               window.location.href = "/login";
             }}
-            className="w-full py-2 px-4 bg-white text-slate-500 text-sm border rounded-lg hover:bg-slate-100 transition-colors"
+            className="w-full py-2 px-4 bg-white text-slate-500 text-sm border rounded-full hover:bg-slate-100 transition-colors"
           >
             Logout
           </button>
@@ -422,7 +431,8 @@ export default function ChatPage() {
           <h2 className="flex items-center gap-2 text-lg font-bold">
             {selectedTopic || (
               <div>
-                <div className="inline-block animate-slide-x">👈</div> Select a class
+                <div className="inline-block animate-slide-x">👈</div> Select a
+                class
               </div>
             )}
           </h2>
@@ -452,14 +462,19 @@ export default function ChatPage() {
               {!msg.isRight && (
                 <>
                   <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-2.5 flex-shrink-0 self-start mt-4 text-gray-500 text-sm font-medium">
-                    {msg.user?.[0]?.toUpperCase() || '?'}
+                    {msg.user?.[0]?.toUpperCase() || "?"}
                   </div>
                   <div className="max-w-[400px] flex flex-col">
                     <div className="text-xs mb-1">{msg.user}</div>
                     <div className="bg-gray-100 p-2 px-3 rounded-xl flex flex-col">
-                      {msg.parsedContent?.map((content, i) => 
-                        typeof content === 'string' ? (
-                          <span key={i} className="break-all whitespace-pre-wrap">{content}</span>
+                      {msg.parsedContent?.map((content, i) =>
+                        typeof content === "string" ? (
+                          <span
+                            key={i}
+                            className="break-all whitespace-pre-wrap"
+                          >
+                            {content}
+                          </span>
                         ) : (
                           <Image
                             key={i}
@@ -477,45 +492,80 @@ export default function ChatPage() {
               )}
               {msg.isRight && (
                 <div className="max-w-[400px] bg-blue-500 text-white p-2 px-3 rounded-xl flex flex-col">
-                    {msg.parsedContent?.map((content, i) => 
-                        typeof content === 'string' ? (
-                            <span key={i} className="break-all whitespace-pre-wrap">{content}</span>
-                        ) : (
-                            <Image
-                                key={i}
-                                src={content.url}
-                                alt={content.name}
-                                width={24}
-                                height={24}
-                                className="inline-block align-middle"
-                            />
-                        )
-                    )}
+                  {msg.parsedContent?.map((content, i) =>
+                    typeof content === "string" ? (
+                      <span key={i} className="break-all whitespace-pre-wrap">
+                        {content}
+                      </span>
+                    ) : (
+                      <Image
+                        key={i}
+                        src={content.url}
+                        alt={content.name}
+                        width={24}
+                        height={24}
+                        className="inline-block align-middle"
+                      />
+                    )
+                  )}
                 </div>
               )}
             </div>
           ))}
         </div>
 
-        <textarea
-          placeholder="Send a message..."
-          className="text-base p-3 border border-gray-200 rounded-lg mx-7 mb-7 outline-none resize-none h-[44px] max-h-[120px] overflow-y-auto"
-          value={newMessage}
-          onChange={(e) => {
-            const textarea = e.target as HTMLTextAreaElement;
-            textarea.style.height = '44px';
-            textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
-            setNewMessage(e.target.value);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+        <div className="flex items-center m-5 border rounded-full p-2">
+          <div className="relative">
+            {showEmojiPicker && (
+              <div
+                className={`absolute bottom-[100%] z-50 ${
+                  showEmojiPicker ? "" : "hidden"
+                }`}
+              >
+                <EmojiPicker onEmojiClick={handleEmojiSelect} />
+              </div>
+            )}
+            <button
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className="h-12 w-[50px] rounded-full flex items-center justify-center bg-slate-400 text-white hover:bg-slate-500"
+            >
+              <MdEmojiEmotions size={25} />
+            </button>
+          </div>
+          <textarea
+            placeholder="Send a message..."
+            className="w-full h-full text-lg p-3 outline-none resize-none h-[44px] max-h-[120px] overflow-y-auto"
+            value={newMessage}
+            onChange={(e) => {
+              const textarea = e.target as HTMLTextAreaElement;
+              textarea.style.height = "48px";
+              textarea.style.height = `${Math.min(
+                textarea.scrollHeight,
+                120
+              )}px`;
+              setNewMessage(e.target.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
-                (e.target as HTMLTextAreaElement).style.height = '44px';
-            }
-          }}
-          rows={1}
-        />
+                (e.target as HTMLTextAreaElement).style.height = "48px";
+              }
+            }}
+            rows={1}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={!newMessage.trim()}
+            className={`h-12 w-[55px] rounded-full flex items-center justify-center ml-3 ${
+              newMessage.trim()
+                ? "bg-blue-500 text-white hover:bg-blue-600"
+                : "bg-blue-300 text-white cursor-not-allowed"
+            }`}
+          >
+            <FaArrowUp size={20} />
+          </button>
+        </div>
       </div>
     </div>
   );
