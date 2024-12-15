@@ -35,8 +35,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
 
     const fetchProfile = async () => {
         try {
-            // TODO: Replace with actual API endpoint
-            const response = await fetch(`/api/profile/${params.username}`);
+            const response = await fetch(`http://localhost:8000/api/profile/${params.username}`);
             if (response.ok) {
                 const data = await response.json();
                 setProfile(data);
@@ -50,10 +49,9 @@ export default function ProfilePage({ params }: { params: { username: string } }
 
     const fetchChatHistory = async () => {
         try {
-            const response = await fetch(`/api/profile/${params.username}/history`);
+            const response = await fetch(`http://localhost:8000/api/profile/${params.username}/history`);
             if (response.ok) {
                 const history = await response.json();
-                // Parse the combined strings into structured data
                 const parsedHistory = history.map((item: string) => {
                     const [classCode, date, time, ...messageParts] = item.split(' ');
                     return {
