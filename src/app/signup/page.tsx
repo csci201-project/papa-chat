@@ -30,7 +30,16 @@ export default function SignupPage() {
         },
         body: JSON.stringify({ username, password })
     });
-    console.log(response);
+    var values = await response.json();
+    if(values.verified)
+      {
+        console.log("registration succeeded");
+        localStorage.setItem('username', username);
+        window.location.href = "/chat";
+      } else {
+        console.log("registration fail");
+        alert(values.message);
+      }
   } catch (error) {
     console.log(error)
   }	
