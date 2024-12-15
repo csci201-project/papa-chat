@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { FaArrowUp } from "react-icons/fa";
 import { MdEmojiEmotions } from "react-icons/md";
-import EmojiPicker from "emoji-picker-react";
+import EmojiPicker, { Theme } from "emoji-picker-react";
 
 interface Class {
   id: string;
@@ -344,9 +344,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-white">
+    <div className="min-h-screen flex bg-gray-900">
       <div className="w-[250px] border-r border-gray-200 p-5 flex flex-col">
-        <div className="mb-5 text-lg">Active Classes</div>
+        <div className="mb-5 text-lg text-white">Active Classes</div>
 
         <div className="flex-1">
           {isAddingTopic ? (
@@ -355,7 +355,7 @@ export default function ChatPage() {
                 type="text"
                 value={newTopic}
                 onChange={(e) => setNewTopic(e.target.value)}
-                placeholder="Enter topic name"
+                placeholder="Enter class name"
                 className="w-full p-2 mb-2 border border-gray-200 rounded"
                 onKeyPress={(e) => e.key === "Enter" && createTopic()}
               />
@@ -381,7 +381,7 @@ export default function ChatPage() {
             isAdmin && (
               <button
                 onClick={() => setIsAddingTopic(true)}
-                className="w-full p-3 mb-4 bg-blue-500 text-white rounded-lg cursor-pointer"
+                className="w-full p-3 mb-4 bg-[#6441a5] rounded-full hover:bg-purple-600 transition-colors text-white  cursor-pointer"
               >
                 Add Topic
               </button>
@@ -395,8 +395,8 @@ export default function ChatPage() {
               className={`w-full p-3 border border-gray-200 font-bold rounded-lg mb-2 cursor-pointer
                 ${
                   selectedTopic === topic
-                    ? "bg-blue-500 text-white"
-                    : "bg-white text-black"
+                    ? "bg-[#6441a5] text-white"
+                    : "bg-black border text-white"
                 }`}
             >
               {topic}
@@ -407,7 +407,7 @@ export default function ChatPage() {
         <div className="mt-auto pt-4 border-t border-gray-200">
           <div 
             onClick={() => window.location.href = `/profile/${currentUser}`}
-            className="flex items-center gap-3 mb-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
+            className="flex items-center gap-3 mb-3 p-2 text-white rounded-lg hover:bg-gray-900 cursor-pointer transition-colors"
           >
             <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
               {currentUser?.[0]?.toUpperCase() || "?"}
@@ -419,7 +419,7 @@ export default function ChatPage() {
               localStorage.removeItem("username");
               window.location.href = "/login";
             }}
-            className="w-full py-2 px-4 bg-white text-slate-500 text-sm border rounded-full hover:bg-slate-100 transition-colors"
+            className="w-full py-2 px-4 bg-[#6441a5] text-slate-500 text-sm border rounded-full hover:bg-purple-600 transition-colors"
           >
             Logout
           </button>
@@ -428,7 +428,7 @@ export default function ChatPage() {
 
       <div className="flex-1 flex flex-col h-screen">
         <div className="border-b border-gray-200 p-5 flex flex-col gap-2.5">
-          <h2 className="flex items-center gap-2 text-lg font-bold">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-white">
             {selectedTopic || (
               <div>
                 <div className="inline-block animate-slide-x">👈</div> Select a
@@ -491,7 +491,7 @@ export default function ChatPage() {
                 </>
               )}
               {msg.isRight && (
-                <div className="max-w-[400px] bg-blue-500 text-white p-2 px-3 rounded-xl flex flex-col">
+                <div className="max-w-[400px] bg-[#6441a5] text-white p-2 px-3 rounded-xl flex flex-col">
                   {msg.parsedContent?.map((content, i) =>
                     typeof content === "string" ? (
                       <span key={i} className="break-all whitespace-pre-wrap">
@@ -522,19 +522,19 @@ export default function ChatPage() {
                   showEmojiPicker ? "" : "hidden"
                 }`}
               >
-                <EmojiPicker onEmojiClick={handleEmojiSelect} />
+                <EmojiPicker onEmojiClick={handleEmojiSelect} theme={Theme.DARK} />
               </div>
             )}
             <button
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="h-12 w-[50px] rounded-full flex items-center justify-center bg-slate-400 text-white hover:bg-slate-500"
+              className="h-12 w-[50px] rounded-full flex items-center justify-center bg-slate-400 text-white hover:bg-slate-600 transition-colors"
             >
               <MdEmojiEmotions size={25} />
             </button>
           </div>
           <textarea
             placeholder="Send a message..."
-            className="w-full h-full text-lg p-3 outline-none resize-none h-[44px] max-h-[120px] overflow-y-auto"
+            className="w-full h-full text-lg p-3 bg-gray-900 text-white outline-none resize-none h-[44px] max-h-[120px] overflow-y-auto"
             value={newMessage}
             onChange={(e) => {
               const textarea = e.target as HTMLTextAreaElement;
@@ -559,11 +559,11 @@ export default function ChatPage() {
             disabled={!newMessage.trim()}
             className={`h-12 w-[55px] rounded-full flex items-center justify-center ml-3 ${
               newMessage.trim()
-                ? "bg-blue-500 text-white hover:bg-blue-600"
-                : "bg-blue-300 text-white cursor-not-allowed"
+                ? "bg-[#6441a5] text-white hover:bg-blue-600"
+                : "bg-gray-800 text-white cursor-not-allowed"
             }`}
           >
-            <FaArrowUp size={20} />
+            <FaArrowUp size={20} color={newMessage.trim() ? "white" : "gray"} />
           </button>
         </div>
       </div>
