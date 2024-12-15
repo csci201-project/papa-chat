@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from 'next/image';
+import Image from "next/image";
 
 interface Class {
   id: string;
@@ -38,14 +38,16 @@ export default function ChatPage() {
   const [newTopic, setNewTopic] = useState("");
   const [isAddingTopic, setIsAddingTopic] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  
-  const [topicStates, setTopicStates] = useState<Map<string, TopicState>>(new Map());
+
+  const [topicStates, setTopicStates] = useState<Map<string, TopicState>>(
+    new Map()
+  );
   const [emoteCache, setEmoteCache] = useState<Map<string, Emote>>(new Map());
   const [currentUser, setCurrentUser] = useState<string | null>(null);
 
   useEffect(() => {
-    setCurrentUser(localStorage.getItem('username'));
-    setIsAdmin(localStorage.getItem('username') == 'admin');
+    setCurrentUser(localStorage.getItem("username"));
+    setIsAdmin(localStorage.getItem("username") == "admin");
   }, []);
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function ChatPage() {
     if (selectedTopic) {
       // Connect WebSocket if needed
       connectWebSocket(selectedTopic);
-      
+
       // Load existing messages
       const topicState = topicStates.get(selectedTopic);
       if (topicState) {
@@ -82,114 +84,127 @@ export default function ChatPage() {
 
   const fetchTopics = async () => {
     try {
-      const response = await fetch('/api/topics');
+      const response = await fetch("/api/topics");
       const topicList = await response.json();
       setTopics(topicList);
       return topicList;
     } catch (error) {
-      console.error('Failed to fetch topics:', error);
+      console.error("Failed to fetch topics:", error);
       return [];
     }
   };
 
   const connectWebSocket = (topic: string) => {
     if (topicStates.get(topic)?.connection?.readyState === WebSocket.OPEN) {
-        console.log("WebSocket already connected for topic:", topic);
-        return;
+      console.log("WebSocket already connected for topic:", topic);
+      return;
     }
 
     console.log("Connecting WebSocket for topic:", topic);
-    
-    const ws = new WebSocket(`ws://localhost:8000/ws/chat/${topic}?token=token`);
+
+    const ws = new WebSocket(
+      `ws://localhost:8000/ws/chat/${topic}?token=token`
+    );
 
     // Set initial state immediately
-    setTopicStates(prev => {
-        const newMap = new Map(prev);
-        newMap.set(topic, { 
-            messages: prev.get(topic)?.messages || [], 
-            connection: ws, 
-            isConnected: false 
-        });
-        return newMap;
+    setTopicStates((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(topic, {
+        messages: prev.get(topic)?.messages || [],
+        connection: ws,
+        isConnected: false,
+      });
+      return newMap;
     });
 
     ws.onopen = () => {
-        console.log('WebSocket Connected:', topic, 'State:', ws.readyState);
-        setTopicStates(prev => {
-            const newMap = new Map(prev);
-            const currentState = newMap.get(topic);
-            newMap.set(topic, { 
-                messages: currentState?.messages || [], 
-                connection: ws, 
-                isConnected: true 
-            });
-            return newMap;
+      console.log("WebSocket Connected:", topic, "State:", ws.readyState);
+      setTopicStates((prev) => {
+        const newMap = new Map(prev);
+        const currentState = newMap.get(topic);
+        newMap.set(topic, {
+          messages: currentState?.messages || [],
+          connection: ws,
+          isConnected: true,
         });
+        return newMap;
+      });
     };
 
     ws.onmessage = async (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            console.log("WebSocket received:", data, "for topic:", topic);
-            
-            const parsedContent = await parseMessage(data.message);
-            const newMessage = {
-                id: Date.now().toString(),
-                user: data.user || 'anonymous',
-                message: data.message,
-                isRight: data.user === currentUser,
-                parsedContent
-            };
+      try {
+        const data = JSON.parse(event.data);
+        console.log("WebSocket received:", data, "for topic:", topic);
 
-            // Update messages immediately if this is the selected topic
-            if (topic === selectedTopic) {
-                setMessages(prev => {
-                    console.log("Updating messages:", [...prev, newMessage]);
-                    return [...prev, newMessage];
-                });
-            }
+        const parsedContent = await parseMessage(data.message);
+        const newMessage = {
+          id: Date.now().toString(),
+          user: data.user || "anonymous",
+          message: data.message,
+          isRight: data.user === currentUser,
+          parsedContent,
+        };
 
-            // Update topic state
-            setTopicStates(prev => {
-                const newMap = new Map(prev);
-                const currentState = newMap.get(topic);
-                if (!currentState) {
-                    console.log("No state for topic:", topic);
-                    return prev;
-                }
-                
-                const newState = {
-                    ...currentState,
-                    messages: [...currentState.messages, newMessage]
-                };
-                console.log("Updated topic state:", topic, newState);
-                newMap.set(topic, newState);
-                return newMap;
-            });
-        } catch (error) {
-            console.error('Error handling message:', error, event.data);
+        // Update messages immediately if this is the selected topic
+        if (topic === selectedTopic) {
+          setMessages((prev) => {
+            console.log("Updating messages:", [...prev, newMessage]);
+            return [...prev, newMessage];
+          });
         }
+
+        // Update topic state
+        setTopicStates((prev) => {
+          const newMap = new Map(prev);
+          const currentState = newMap.get(topic);
+          if (!currentState) {
+            console.log("No state for topic:", topic);
+            return prev;
+          }
+
+          const newState = {
+            ...currentState,
+            messages: [...currentState.messages, newMessage],
+          };
+          console.log("Updated topic state:", topic, newState);
+          newMap.set(topic, newState);
+          return newMap;
+        });
+      } catch (error) {
+        console.error("Error handling message:", error, event.data);
+      }
     };
 
     // Add reconnection logic
     ws.onclose = (event) => {
-        console.log('WebSocket closed for topic:', topic, 'Code:', event.code, 'Reason:', event.reason);
-        setTopicStates(prev => {
-            const newMap = new Map(prev);
-            const currentState = newMap.get(topic);
-            if (currentState) {
-                newMap.set(topic, { ...currentState, connection: null, isConnected: false });
-            }
-            return newMap;
-        });
+      console.log(
+        "WebSocket closed for topic:",
+        topic,
+        "Code:",
+        event.code,
+        "Reason:",
+        event.reason
+      );
+      setTopicStates((prev) => {
+        const newMap = new Map(prev);
+        const currentState = newMap.get(topic);
+        if (currentState) {
+          newMap.set(topic, {
+            ...currentState,
+            connection: null,
+            isConnected: false,
+          });
+        }
+        return newMap;
+      });
 
-        // Attempt to reconnect after a delay
-        setTimeout(() => {
-            if (topic === selectedTopic) {
-                console.log("Attempting to reconnect to topic:", topic);
-                connectWebSocket(topic);
-            }
-        }, 1000);
+      // Attempt to reconnect after a delay
+      setTimeout(() => {
+        if (topic === selectedTopic) {
+          console.log("Attempting to reconnect to topic:", topic);
+          connectWebSocket(topic);
+        }
+      }, 1000);
     };
 
     return ws;
@@ -198,62 +213,73 @@ export default function ChatPage() {
   const sendMessage = async () => {
     const topicState = topicStates.get(selectedTopic);
     if (!newMessage.trim() || !currentUser) {
-        return;
+      return;
     }
 
-    if (!topicState?.connection || topicState.connection.readyState !== WebSocket.OPEN) {
-        console.log("WebSocket not open, state:", topicState?.connection?.readyState);
-        connectWebSocket(selectedTopic);
-        return;
+    if (
+      !topicState?.connection ||
+      topicState.connection.readyState !== WebSocket.OPEN
+    ) {
+      console.log(
+        "WebSocket not open, state:",
+        topicState?.connection?.readyState
+      );
+      connectWebSocket(selectedTopic);
+      return;
     }
 
     const messageData = {
-        type: 'chat',
-        message: newMessage,
-        user: currentUser
+      type: "chat",
+      message: newMessage,
+      user: currentUser,
     };
 
     try {
-        console.log('Sending message:', messageData, 'WebSocket state:', topicState.connection.readyState);
-        topicState.connection.send(JSON.stringify(messageData));
-        setNewMessage('');
+      console.log(
+        "Sending message:",
+        messageData,
+        "WebSocket state:",
+        topicState.connection.readyState
+      );
+      topicState.connection.send(JSON.stringify(messageData));
+      setNewMessage("");
     } catch (error) {
-        console.error('Error sending message:', error);
-        if (topicState.connection.readyState !== WebSocket.OPEN) {
-            console.log("WebSocket closed during send, reconnecting...");
-            connectWebSocket(selectedTopic);
-        }
+      console.error("Error sending message:", error);
+      if (topicState.connection.readyState !== WebSocket.OPEN) {
+        console.log("WebSocket closed during send, reconnecting...");
+        connectWebSocket(selectedTopic);
+      }
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       sendMessage();
     }
   };
 
   const createTopic = async () => {
     if (!newTopic.trim()) return;
-    
+
     try {
-        console.log("Creating topic:", newTopic);
-        const response = await fetch(`/api/topics/${newTopic}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            console.log("Topic created successfully");
-            await fetchTopics();
-            setNewTopic("");
-            setIsAddingTopic(false);
-        } else {
-            console.error("Failed to create topic:", await response.text());
-        }
+      console.log("Creating topic:", newTopic);
+      const response = await fetch(`/api/topics/${newTopic}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        console.log("Topic created successfully");
+        await fetchTopics();
+        setNewTopic("");
+        setIsAddingTopic(false);
+      } else {
+        console.error("Failed to create topic:", await response.text());
+      }
     } catch (error) {
-        console.error('Failed to create topic:', error);
+      console.error("Failed to create topic:", error);
     }
   };
 
@@ -267,13 +293,13 @@ export default function ChatPage() {
       if (response.ok) {
         const emote: Emote = {
           name: emoteName,
-          url: `/api/emotes/${emoteName}`
+          url: `/api/emotes/${emoteName}`,
         };
-        setEmoteCache(prev => new Map(prev).set(emoteName, emote));
+        setEmoteCache((prev) => new Map(prev).set(emoteName, emote));
         return emote;
       }
     } catch (error) {
-      console.error('Failed to fetch emote:', emoteName, error);
+      console.error("Failed to fetch emote:", emoteName, error);
     }
     return null;
   };
@@ -282,37 +308,37 @@ export default function ChatPage() {
     const parts: (string | Emote)[] = [];
     const emoteRegex = /:([a-zA-Z0-9_]+):/g;
     let lastIndex = 0;
-    
+
     for (const match of message.matchAll(emoteRegex)) {
       const [fullMatch, emoteName] = match;
       const matchIndex = match.index!;
-      
+
       if (matchIndex > lastIndex) {
         parts.push(message.slice(lastIndex, matchIndex));
       }
-      
+
       const emote = await fetchEmote(emoteName);
       if (emote) {
         parts.push(emote);
       } else {
         parts.push(fullMatch);
       }
-      
+
       lastIndex = matchIndex + fullMatch.length;
     }
-    
+
     if (lastIndex < message.length) {
       parts.push(message.slice(lastIndex));
     }
-    
+
     return parts;
   };
 
   return (
     <div className="min-h-screen flex bg-white">
       <div className="w-[250px] border-r border-gray-200 p-5 flex flex-col">
-        <h2 className="mb-5">Active Topics</h2>
-        
+        <div className="mb-5 text-lg">Active Classes</div>
+
         <div className="flex-1">
           {isAddingTopic ? (
             <div className="w-full mb-4">
@@ -322,7 +348,7 @@ export default function ChatPage() {
                 onChange={(e) => setNewTopic(e.target.value)}
                 placeholder="Enter topic name"
                 className="w-full p-2 mb-2 border border-gray-200 rounded"
-                onKeyPress={(e) => e.key === 'Enter' && createTopic()}
+                onKeyPress={(e) => e.key === "Enter" && createTopic()}
               />
               <div className="flex gap-2">
                 <button
@@ -343,12 +369,14 @@ export default function ChatPage() {
               </div>
             </div>
           ) : (
-            isAdmin && (<button
-              onClick={() => setIsAddingTopic(true)}
-              className="w-full p-3 mb-4 bg-blue-500 text-white rounded-lg cursor-pointer"
-            >
-              Add Topic
-            </button>)
+            isAdmin && (
+              <button
+                onClick={() => setIsAddingTopic(true)}
+                className="w-full p-3 mb-4 bg-blue-500 text-white rounded-lg cursor-pointer"
+              >
+                Add Topic
+              </button>
+            )
           )}
 
           {topics.map((topic) => (
@@ -356,7 +384,11 @@ export default function ChatPage() {
               key={topic}
               onClick={() => setSelectedTopic(topic)}
               className={`w-full p-3 border border-gray-200 font-bold rounded-lg mb-2 cursor-pointer
-                ${selectedTopic === topic ? 'bg-blue-500 text-white' : 'bg-white text-black'}`}
+                ${
+                  selectedTopic === topic
+                    ? "bg-blue-500 text-white"
+                    : "bg-white text-black"
+                }`}
             >
               {topic}
             </button>
@@ -366,14 +398,14 @@ export default function ChatPage() {
         <div className="mt-auto pt-4 border-t border-gray-200">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
-              {currentUser?.[0]?.toUpperCase() || '?'}
+              {currentUser?.[0]?.toUpperCase() || "?"}
             </div>
             <span className="font-medium">{currentUser}</span>
           </div>
           <button
             onClick={() => {
-              localStorage.removeItem('username');
-              window.location.href = '/login';
+              localStorage.removeItem("username");
+              window.location.href = "/login";
             }}
             className="w-full py-2 px-4 bg-white text-slate-500 text-sm border rounded-lg hover:bg-slate-100 transition-colors"
           >
@@ -384,10 +416,24 @@ export default function ChatPage() {
 
       <div className="flex-1 flex flex-col h-screen">
         <div className="border-b border-gray-200 p-5 flex flex-col gap-2.5">
-          <h2>{selectedTopic || "Select a topic"}</h2>
+          <h2 className="flex items-center gap-2 text-lg font-bold">
+            {selectedTopic || (
+              <div>
+                <div className="inline-block animate-slide-x">👈</div> Select a class
+              </div>
+            )}
+          </h2>
           {selectedTopic && (
-            <div className={`text-xs ${topicStates.get(selectedTopic)?.isConnected ? 'text-green-500' : 'text-red-500'}`}>
-              {topicStates.get(selectedTopic)?.isConnected ? 'Connected' : 'Connecting...'}
+            <div
+              className={`text-xs ${
+                topicStates.get(selectedTopic)?.isConnected
+                  ? "text-green-500"
+                  : "text-red-500"
+              }`}
+            >
+              {topicStates.get(selectedTopic)?.isConnected
+                ? "Connected"
+                : "Connecting..."}
             </div>
           )}
         </div>
@@ -396,7 +442,9 @@ export default function ChatPage() {
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`flex mb-4 flex-grow ${msg.isRight ? 'justify-end' : ''}`}
+              className={`flex mb-4 flex-grow ${
+                msg.isRight ? "justify-end" : ""
+              }`}
             >
               {!msg.isRight && (
                 <>
