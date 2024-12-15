@@ -430,7 +430,7 @@ export default function ChatPage() {
               localStorage.removeItem("username");
               window.location.href = "/login";
             }}
-            className="w-full py-2 px-4 bg-[#6441a5] text-slate-500 text-sm border rounded-full hover:bg-purple-600 transition-colors"
+            className="w-full py-2 px-4 bg-[#6441a5] text-white text-sm border rounded-full hover:bg-purple-600 transition-colors"
           >
             Logout
           </button>
@@ -472,11 +472,11 @@ export default function ChatPage() {
             >
               {!msg.isRight && (
                 <>
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-2.5 flex-shrink-0 self-start mt-4 text-gray-500 text-sm font-medium">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-2.5 flex-shrink-0 self-start mt-4 text-black text-sm font-medium">
                     {msg.user?.[0]?.toUpperCase() || "?"}
                   </div>
                   <div className="max-w-[400px] flex flex-col">
-                    <div className="text-xs mb-1">{msg.user}</div>
+                    <div className="text-xs mb-1 text-white">{msg.user}</div>
                     <div className="bg-gray-100 p-2 px-3 rounded-xl flex flex-col">
                       {msg.parsedContent?.map((content, i) =>
                         typeof content === "string" ? (
@@ -493,7 +493,7 @@ export default function ChatPage() {
                             alt={content.name}
                             width={24}
                             height={24}
-                            className="inline-block align-middle"
+                            className="inline-block align-middle text-black"
                           />
                         )
                       )}
