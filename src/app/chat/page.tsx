@@ -279,6 +279,17 @@ export default function ChatPage() {
         await fetchTopics();
         setNewTopic("");
         setIsAddingTopic(false);
+        try {
+          const response = await fetch("http://localhost:8000/registerClass", {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({newTopic}),
+          });
+        } catch (error) {
+            console.error(error);
+        }
       } else {
         console.error("Failed to create topic:", await response.text());
       }
