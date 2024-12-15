@@ -37,6 +37,7 @@ export default function ChatPage() {
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [newTopic, setNewTopic] = useState("");
   const [isAddingTopic, setIsAddingTopic] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   const [topicStates, setTopicStates] = useState<Map<string, TopicState>>(new Map());
   const [emoteCache, setEmoteCache] = useState<Map<string, Emote>>(new Map());
@@ -44,6 +45,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     setCurrentUser(localStorage.getItem('username'));
+    setIsAdmin(localStorage.getItem('username') == 'admin');
   }, []);
 
   useEffect(() => {
@@ -340,12 +342,12 @@ export default function ChatPage() {
             </div>
           </div>
         ) : (
-          <button
+          isAdmin && (<button
             onClick={() => setIsAddingTopic(true)}
             className="w-full p-3 mb-4 bg-blue-500 text-white rounded-lg cursor-pointer"
           >
             Add Topic
-          </button>
+          </button>)
         )}
 
         {topics.map((topic) => (
