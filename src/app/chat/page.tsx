@@ -403,12 +403,12 @@ export default function ChatPage() {
                   <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-2.5 flex-shrink-0 self-start mt-4">
                     {msg.avatar}
                   </div>
-                  <div className="max-w-[60%] flex flex-col">
+                  <div className="max-w-[400px] flex flex-col">
                     <div className="text-xs mb-1">{msg.user}</div>
-                    <div className="bg-gray-100 p-2 px-3 rounded-xl flex flex-wrap items-center gap-1">
+                    <div className="bg-gray-100 p-2 px-3 rounded-xl flex flex-col">
                       {msg.parsedContent?.map((content, i) => 
                         typeof content === 'string' ? (
-                          <span key={i}>{content}</span>
+                          <span key={i} className="break-all whitespace-pre-wrap">{content}</span>
                         ) : (
                           <Image
                             key={i}
@@ -425,34 +425,45 @@ export default function ChatPage() {
                 </>
               )}
               {msg.isRight && (
-                <div className="max-w-[60%] bg-blue-500 text-white p-2 px-3 rounded-xl flex flex-wrap items-center gap-1">
-                  {msg.parsedContent?.map((content, i) => 
-                    typeof content === 'string' ? (
-                      <span key={i}>{content}</span>
-                    ) : (
-                      <Image
-                        key={i}
-                        src={content.url}
-                        alt={content.name}
-                        width={24}
-                        height={24}
-                        className="inline-block align-middle"
-                      />
-                    )
-                  )}
+                <div className="max-w-[400px] bg-blue-500 text-white p-2 px-3 rounded-xl flex flex-col">
+                    {msg.parsedContent?.map((content, i) => 
+                        typeof content === 'string' ? (
+                            <span key={i} className="break-all whitespace-pre-wrap">{content}</span>
+                        ) : (
+                            <Image
+                                key={i}
+                                src={content.url}
+                                alt={content.name}
+                                width={24}
+                                height={24}
+                                className="inline-block align-middle"
+                            />
+                        )
+                    )}
                 </div>
               )}
             </div>
           ))}
         </div>
 
-        <input
-          type="text"
+        <textarea
           placeholder="Send a message..."
-          className="text-base p-3 border border-gray-200 rounded-lg mx-7 mb-7 outline-none"
+          className="text-base p-3 border border-gray-200 rounded-lg mx-7 mb-7 outline-none resize-none h-[44px] max-h-[120px] overflow-y-auto"
           value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={handleKeyPress}
+          onChange={(e) => {
+            const textarea = e.target as HTMLTextAreaElement;
+            textarea.style.height = '44px';
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+            setNewMessage(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+                (e.target as HTMLTextAreaElement).style.height = '44px';
+            }
+          }}
+          rows={1}
         />
       </div>
     </div>
