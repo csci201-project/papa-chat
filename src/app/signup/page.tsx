@@ -46,16 +46,16 @@ export default function SignupPage() {
 }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="max-w-[400px] w-full p-8 bg-white rounded-lg shadow-sm">
-        <h1 className="text-2xl font-bold text-center mb-6 text-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="max-w-[400px] w-full p-8 bg-gray-800 rounded-lg shadow-sm">
+        <h1 className="text-2xl font-bold text-center mb-6 text-gray-100">
           Sign up for PapaChat
         </h1>
         <form onSubmit={handleSubmit}>
           <input
             type="text"
             required
-            className="w-full px-3 py-2 mb-4 text-sm border border-gray-300 rounded-md bg-white"
+            className="w-full px-3 py-2 mb-4 text-sm rounded-md bg-gray-900 text-white border-none focus:outline-none focus:ring-0"
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -63,7 +63,7 @@ export default function SignupPage() {
           <input
             type="password"
             required
-            className="w-full px-3 py-2 mb-4 text-sm border border-gray-300 rounded-md bg-white"
+            className="w-full px-3 py-2 mb-4 text-sm rounded-md bg-gray-900 text-white border-none focus:outline-none focus:ring-0"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -71,14 +71,14 @@ export default function SignupPage() {
           <input
             type="password"
             required
-            className="w-full px-3 py-2 mb-4 text-sm border border-gray-300 rounded-md bg-white"
+            className="w-full px-3 py-2 mb-4 text-sm rounded-md bg-gray-900 text-white border-none focus:outline-none focus:ring-0"
             placeholder="Confirm Password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />
           <button 
             type="submit" 
-            className="w-full px-4 py-2 mb-4 text-sm text-white bg-blue-600 border-none rounded-md cursor-pointer"
+            className="w-full px-4 py-2 mb-4 text-sm text-white bg-[#6441a5] hover:bg-purple-700 transition-colors border-none rounded-md cursor-pointer"
           >
             Sign up
           </button>

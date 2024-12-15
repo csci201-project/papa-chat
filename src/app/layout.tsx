@@ -4,6 +4,9 @@ import "./../globals.css";
 export const metadata: Metadata = {
   title: "PapaChat",
   description: "PapaChat is a chat application for CSCI 201",
+  icons: {
+    icon: "./papa.jpg"
+  }
 };
 
 export default function RootLayout({
@@ -13,9 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body >
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
