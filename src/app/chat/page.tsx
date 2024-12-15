@@ -310,56 +310,76 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen flex bg-white">
-      <div className="w-[250px] border-r border-gray-200 p-5 flex flex-col items-center">
+      <div className="w-[250px] border-r border-gray-200 p-5 flex flex-col">
         <h2 className="mb-5">Active Topics</h2>
         
-        {isAddingTopic ? (
-          <div className="w-full mb-4">
-            <input
-              type="text"
-              value={newTopic}
-              onChange={(e) => setNewTopic(e.target.value)}
-              placeholder="Enter topic name"
-              className="w-full p-2 mb-2 border border-gray-200 rounded"
-              onKeyPress={(e) => e.key === 'Enter' && createTopic()}
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={createTopic}
-                className="flex-1 p-2 bg-blue-500 text-white rounded cursor-pointer"
-              >
-                Create
-              </button>
-              <button
-                onClick={() => {
-                  setIsAddingTopic(false);
-                  setNewTopic("");
-                }}
-                className="flex-1 p-2 bg-gray-200 rounded cursor-pointer"
-              >
-                Cancel
-              </button>
+        <div className="flex-1">
+          {isAddingTopic ? (
+            <div className="w-full mb-4">
+              <input
+                type="text"
+                value={newTopic}
+                onChange={(e) => setNewTopic(e.target.value)}
+                placeholder="Enter topic name"
+                className="w-full p-2 mb-2 border border-gray-200 rounded"
+                onKeyPress={(e) => e.key === 'Enter' && createTopic()}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={createTopic}
+                  className="flex-1 p-2 bg-blue-500 text-white rounded cursor-pointer"
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => {
+                    setIsAddingTopic(false);
+                    setNewTopic("");
+                  }}
+                  className="flex-1 p-2 bg-gray-200 rounded cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          isAdmin && (<button
-            onClick={() => setIsAddingTopic(true)}
-            className="w-full p-3 mb-4 bg-blue-500 text-white rounded-lg cursor-pointer"
-          >
-            Add Topic
-          </button>)
-        )}
+          ) : (
+            isAdmin && (<button
+              onClick={() => setIsAddingTopic(true)}
+              className="w-full p-3 mb-4 bg-blue-500 text-white rounded-lg cursor-pointer"
+            >
+              Add Topic
+            </button>)
+          )}
 
-        {topics.map((topic) => (
+          {topics.map((topic) => (
+            <button
+              key={topic}
+              onClick={() => setSelectedTopic(topic)}
+              className={`w-full p-3 border border-gray-200 font-bold rounded-lg mb-2 cursor-pointer
+                ${selectedTopic === topic ? 'bg-blue-500 text-white' : 'bg-white text-black'}`}
+            >
+              {topic}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-auto pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
+              {currentUser?.[0]?.toUpperCase() || '?'}
+            </div>
+            <span className="font-medium">{currentUser}</span>
+          </div>
           <button
-            key={topic}
-            onClick={() => setSelectedTopic(topic)}
-            className={`w-full p-3 border border-gray-200 font-bold rounded-lg mb-2 cursor-pointer
-              ${selectedTopic === topic ? 'bg-blue-500 text-white' : 'bg-white text-black'}`}
+            onClick={() => {
+              localStorage.removeItem('username');
+              window.location.href = '/login';
+            }}
+            className="w-full py-2 px-4 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
           >
-            {topic}
+            Logout
           </button>
-        ))}
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col h-screen">
