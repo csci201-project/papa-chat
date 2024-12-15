@@ -400,8 +400,8 @@ export default function ChatPage() {
             >
               {!msg.isRight && (
                 <>
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-2.5 flex-shrink-0 self-start mt-4">
-                    {msg.avatar}
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-2.5 flex-shrink-0 self-start mt-4 text-gray-500 text-sm font-medium">
+                    {msg.user?.[0]?.toUpperCase() || '?'}
                   </div>
                   <div className="max-w-[400px] flex flex-col">
                     <div className="text-xs mb-1">{msg.user}</div>
