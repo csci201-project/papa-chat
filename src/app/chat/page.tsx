@@ -396,7 +396,10 @@ export default function ChatPage() {
         </div>
 
         <div className="mt-auto pt-4 border-t border-gray-200">
-          <div className="flex items-center gap-3 mb-3">
+          <div 
+            onClick={() => window.location.href = `/profile/${currentUser}`}
+            className="flex items-center gap-3 mb-3 p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
+          >
             <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white">
               {currentUser?.[0]?.toUpperCase() || "?"}
             </div>
