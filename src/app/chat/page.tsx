@@ -48,20 +48,22 @@ export default function ChatPage() {
 
   useEffect(() => {
     fetchTopics().then((topicList: string[]) => {
-      topicList.forEach((topic: string) => {
-        connectWebSocket(topic);
-      });
+      setTopics(topicList);
     });
   }, []);
 
   useEffect(() => {
     if (selectedTopic) {
+      // Connect WebSocket if needed
+      connectWebSocket(selectedTopic);
+      
+      // Load existing messages
       const topicState = topicStates.get(selectedTopic);
       if (topicState) {
-        setMessages(topicState.messages);
+        setMessages([...topicState.messages]);
       }
     }
-  }, [selectedTopic, topicStates]);
+  }, [selectedTopic]);
 
   useEffect(() => {
     return () => {
@@ -71,6 +73,10 @@ export default function ChatPage() {
       });
     };
   }, []);
+
+  useEffect(() => {
+    console.log("Messages updated:", messages);
+  }, [messages]);
 
   const fetchTopics = async () => {
     try {
@@ -85,91 +91,136 @@ export default function ChatPage() {
   };
 
   const connectWebSocket = (topic: string) => {
-    if (topicStates.get(topic)?.connection) {
-      return;
+    if (topicStates.get(topic)?.connection?.readyState === WebSocket.OPEN) {
+        console.log("WebSocket already connected for topic:", topic);
+        return;
     }
 
+    console.log("Connecting WebSocket for topic:", topic);
+    
     const ws = new WebSocket(`ws://localhost:8000/ws/chat/${topic}?token=token`);
 
-    ws.onopen = () => {
-      setTopicStates(prev => {
+    // Set initial state immediately
+    setTopicStates(prev => {
         const newMap = new Map(prev);
-        const currentState = newMap.get(topic) || { messages: [], connection: ws, isConnected: true };
-        newMap.set(topic, { ...currentState, isConnected: true });
+        newMap.set(topic, { 
+            messages: prev.get(topic)?.messages || [], 
+            connection: ws, 
+            isConnected: false 
+        });
         return newMap;
-      });
-    };
+    });
 
-    ws.onclose = (event) => {
-      console.log('WebSocket Closed:', event);
-      setTopicStates(prev => {
-        const newMap = new Map(prev);
-        const currentState = newMap.get(topic) || { messages: [], connection: null, isConnected: false };
-        newMap.set(topic, { ...currentState, isConnected: false });
-        return newMap;
-      });
+    ws.onopen = () => {
+        console.log('WebSocket Connected:', topic, 'State:', ws.readyState);
+        setTopicStates(prev => {
+            const newMap = new Map(prev);
+            const currentState = newMap.get(topic);
+            newMap.set(topic, { 
+                messages: currentState?.messages || [], 
+                connection: ws, 
+                isConnected: true 
+            });
+            return newMap;
+        });
     };
 
     ws.onmessage = async (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        const parsedContent = await parseMessage(data.message);
-        const newMessage = {
-          id: Date.now().toString(),
-          user: data.user || 'anonymous',
-          message: data.message,
-          isRight: data.user === currentUser,
-          parsedContent
-        };
+        try {
+            const data = JSON.parse(event.data);
+            console.log("WebSocket received:", data, "for topic:", topic);
+            
+            const parsedContent = await parseMessage(data.message);
+            const newMessage = {
+                id: Date.now().toString(),
+                user: data.user || 'anonymous',
+                message: data.message,
+                isRight: data.user === currentUser,
+                parsedContent
+            };
 
+            // Update messages immediately if this is the selected topic
+            if (topic === selectedTopic) {
+                setMessages(prev => {
+                    console.log("Updating messages:", [...prev, newMessage]);
+                    return [...prev, newMessage];
+                });
+            }
+
+            // Update topic state
+            setTopicStates(prev => {
+                const newMap = new Map(prev);
+                const currentState = newMap.get(topic);
+                if (!currentState) {
+                    console.log("No state for topic:", topic);
+                    return prev;
+                }
+                
+                const newState = {
+                    ...currentState,
+                    messages: [...currentState.messages, newMessage]
+                };
+                console.log("Updated topic state:", topic, newState);
+                newMap.set(topic, newState);
+                return newMap;
+            });
+        } catch (error) {
+            console.error('Error handling message:', error, event.data);
+        }
+    };
+
+    // Add reconnection logic
+    ws.onclose = (event) => {
+        console.log('WebSocket closed for topic:', topic, 'Code:', event.code, 'Reason:', event.reason);
         setTopicStates(prev => {
-          const newMap = new Map(prev);
-          const currentState = newMap.get(topic) || { messages: [], connection: ws, isConnected: true };
-          newMap.set(topic, {
-            ...currentState,
-            messages: [...currentState.messages, newMessage]
-          });
-          return newMap;
+            const newMap = new Map(prev);
+            const currentState = newMap.get(topic);
+            if (currentState) {
+                newMap.set(topic, { ...currentState, connection: null, isConnected: false });
+            }
+            return newMap;
         });
 
-        if (topic === selectedTopic) {
-          setMessages(prev => [...prev, newMessage]);
-        }
-      } catch (error) {
-        console.error('Error parsing message:', error);
-      }
+        // Attempt to reconnect after a delay
+        setTimeout(() => {
+            if (topic === selectedTopic) {
+                console.log("Attempting to reconnect to topic:", topic);
+                connectWebSocket(topic);
+            }
+        }, 1000);
     };
 
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    setTopicStates(prev => {
-      const newMap = new Map(prev);
-      newMap.set(topic, { messages: [], connection: ws, isConnected: false });
-      return newMap;
-    });
+    return ws;
   };
 
   const sendMessage = async () => {
     const topicState = topicStates.get(selectedTopic);
-    if (!newMessage.trim() || !topicState?.connection || !topicState.isConnected || !currentUser) {
-      return;
+    if (!newMessage.trim() || !currentUser) {
+        return;
     }
-  
-    const messageData = {
-      type: 'chat',
-      message: newMessage,
-      user: currentUser
-    };
-  
-    try {
-      console.log('Sending message:', messageData);
-      topicState.connection.send(JSON.stringify(messageData));
 
-      setNewMessage('');
+    if (!topicState?.connection || topicState.connection.readyState !== WebSocket.OPEN) {
+        console.log("WebSocket not open, state:", topicState?.connection?.readyState);
+        connectWebSocket(selectedTopic);
+        return;
+    }
+
+    const messageData = {
+        type: 'chat',
+        message: newMessage,
+        user: currentUser
+    };
+
+    try {
+        console.log('Sending message:', messageData, 'WebSocket state:', topicState.connection.readyState);
+        topicState.connection.send(JSON.stringify(messageData));
+        setNewMessage('');
     } catch (error) {
-      console.error('Error sending message:', error);
+        console.error('Error sending message:', error);
+        if (topicState.connection.readyState !== WebSocket.OPEN) {
+            console.log("WebSocket closed during send, reconnecting...");
+            connectWebSocket(selectedTopic);
+        }
     }
   };
 
@@ -183,17 +234,24 @@ export default function ChatPage() {
     if (!newTopic.trim()) return;
     
     try {
-      const response = await fetch(`/api/topics/${newTopic}`, {
-        method: 'POST',
-      });
-      
-      if (response.ok) {
-        fetchTopics();
-        setNewTopic("");
-        setIsAddingTopic(false);
-      }
+        console.log("Creating topic:", newTopic);
+        const response = await fetch(`/api/topics/${newTopic}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            console.log("Topic created successfully");
+            await fetchTopics();
+            setNewTopic("");
+            setIsAddingTopic(false);
+        } else {
+            console.error("Failed to create topic:", await response.text());
+        }
     } catch (error) {
-      console.error('Failed to create topic:', error);
+        console.error('Failed to create topic:', error);
     }
   };
 
